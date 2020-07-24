@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Shape;
@@ -15,19 +16,27 @@ import java.text.AttributedCharacterIterator;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 
 public class GUI {
 	JFrame frame;
 	Node[][] map;
-	int cells = 30;
+	Map canvas;
 	JPanel panel = new JPanel();
+	int cells = 30;
+	int startx = -1;
+	int starty = -1;
+	int finishx = -1;
+	int finishy = -1;
+	
+	//Constantes
 	private int WIDTH = 607;
 	private int HEIGHT = 630;
-	Map canvas;
-	Border loweredetched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
 	int MSIZE = 600;
 	int CSIZE = MSIZE/cells;
 
@@ -37,31 +46,72 @@ public class GUI {
 	}
 	
 	public GUI() {
-		createEmptyMap();
+		try {
+			createEmptyMap();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		enterPositions();
 		initialize();
 	}
 	
-	public void createEmptyMap() {
+	public void createEmptyMap() throws Exception{	
 		map = new Node[cells][cells];
-		
 		for(int i = 0 ; i < cells; i++) {
 			for(int j = 0 ; j < cells; j++) {
 				map[i][j] = new Node(3,i,j);
 			}
 		}
 		
-				
+	}
+	
+	public void enterPositions() {
+		JPanel valuePanel = new JPanel();
+		valuePanel.setLayout(new GridLayout(0, 2, 8, 8));
+		valuePanel.add(new JLabel("Ingrese la posicion del nodo inicial"));
+		valuePanel.add(new JLabel(""));
+
+		valuePanel.add(new JLabel("X (entre 0 y "+cells+"): "));
+		JTextField sx = new JTextField("");
+		valuePanel.add(sx);
+		valuePanel.add(new JLabel("Y (entre 0 y "+cells+"): "));
+		JTextField sy = new JTextField("");
+		valuePanel.add(sy);
+		
+		valuePanel.add(new JLabel("Ingrese la posicion del nodo final"));
+		valuePanel.add(new JLabel(""));
+		valuePanel.add(new JLabel("X (entre 0 y "+cells+"): "));
+		JTextField fx = new JTextField("");
+		valuePanel.add(fx);
+		valuePanel.add(new JLabel("Y (entre 0 y "+cells+"): "));
+		JTextField fy = new JTextField("");
+		valuePanel.add(fy);
+		
+		int result = JOptionPane.showConfirmDialog(null, valuePanel, " ", JOptionPane.OK_CANCEL_OPTION,
+				JOptionPane.PLAIN_MESSAGE);
+		
+		int psx = Integer.parseInt(sx.getText());
+		int psy = Integer.parseInt(sy.getText());
+		
+		int pfx = Integer.parseInt(fx.getText());
+		int pfy = Integer.parseInt(fy.getText());
+		
+		map[psx][psx].setCellType(1);
+		map[pfx][pfy].setCellType(2);
 	}
 	
 	public void initialize() {
+
+		
 		frame = new JFrame();
 		frame.setVisible(true);
 		frame.setResizable(false);
 		frame.setSize(WIDTH, HEIGHT);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
-		
 		frame.getContentPane().add(panel);
+		
 		canvas = new Map();
 		canvas.setBounds(0,0, MSIZE+1, MSIZE+1);
 		frame.getContentPane().add(canvas);
@@ -80,7 +130,6 @@ public class GUI {
 			this.x = x;
 			this.y = y;
 		}
-		
 		public int getCellType() {
 			return cellType;
 		}
@@ -113,8 +162,16 @@ public class GUI {
 			super.paintComponent(g);
 			for(int x = 0; x < cells; x++) {	//PAINT EACH NODE IN THE GRID
 				for(int y = 0; y < cells; y++) {
-
-					g.setColor(Color.WHITE);
+					switch (map[x][y].getCellType()) {
+					case 1:
+						g.setColor(Color.MAGENTA);break;
+					case 2:
+						g.setColor(Color.RED);break;
+					case 3:
+						g.setColor(Color.WHITE);break;
+					case 4:
+						g.setColor(Color.BLACK);break;
+					}
 					g.fillRect(x*CSIZE,y*CSIZE,CSIZE,CSIZE);
 					g.setColor(Color.BLACK);
 					g.drawRect(x*CSIZE,y*CSIZE,CSIZE,CSIZE);
