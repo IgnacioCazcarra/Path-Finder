@@ -48,15 +48,15 @@ public class GUI {
 	public GUI() {
 		try {
 			createEmptyMap();
+			initialize();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		enterPositions();
-		initialize();
+		
 	}
 	
-	public void createEmptyMap() throws Exception{	
+	public void createEmptyMap(){	
 		map = new Node[cells][cells];
 		for(int i = 0 ; i < cells; i++) {
 			for(int j = 0 ; j < cells; j++) {
@@ -66,7 +66,7 @@ public class GUI {
 		
 	}
 	
-	public void enterPositions() {
+	public void enterPositions() throws Exception {
 		JPanel valuePanel = new JPanel();
 		valuePanel.setLayout(new GridLayout(0, 2, 8, 8));
 		valuePanel.add(new JLabel("Ingrese la posicion del nodo inicial"));
@@ -97,13 +97,19 @@ public class GUI {
 		int pfx = Integer.parseInt(fx.getText());
 		int pfy = Integer.parseInt(fy.getText());
 		
+		if(psx>=cells || psy>=cells || pfx>=cells || pfy>=cells) throw new Exception("ERROR: Por lo menos uno de los valores ingresados excede la capacidad maxima");
+		if(psx<0 || psy<0 || pfx<0 || pfy<0) throw new Exception("ERROR: Por lo menos uno de los valores ingresados es menor a la posicion minima (0)");
+		if(psx==psy && pfx==pfy) throw new Exception("ERROR: Los puntos no pueden tener las mismas coordenadas");
+
+		
 		map[psx][psx].setCellType(1);
 		map[pfx][pfy].setCellType(2);
 	}
 	
-	public void initialize() {
+	public void initialize() throws Exception {
 
-		
+		enterPositions();
+
 		frame = new JFrame();
 		frame.setVisible(true);
 		frame.setResizable(false);
