@@ -13,8 +13,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.ImageObserver;
 import java.text.AttributedCharacterIterator;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -29,17 +32,19 @@ public class GUI {
 	Map canvas;
 	JPanel panel = new JPanel();
 	int cells = 30;
-	int startx = -1;
-	int starty = -1;
-	int finishx = -1;
-	int finishy = -1;
+	int psx = -1;
+	int psy = -1;
+	int pfx= -1;
+	int pfy= -1;
+	//Botones
+	String[] pinceles = {"Nodo inicial","Nodo final","Borrador","Muro"};
 	
 	//Constantes
-	private int WIDTH = 607;
+	private int WIDTH = 605;
 	private int HEIGHT = 630;
 	int MSIZE = 600;
 	int CSIZE = MSIZE/cells;
-
+	
 	
 	public static void main(String[] args) {
 		new GUI();
@@ -91,15 +96,15 @@ public class GUI {
 		int result = JOptionPane.showConfirmDialog(null, valuePanel, " ", JOptionPane.OK_CANCEL_OPTION,
 				JOptionPane.PLAIN_MESSAGE);
 		
-		int psx = Integer.parseInt(sx.getText());
-		int psy = Integer.parseInt(sy.getText());
+		psx = Integer.parseInt(sx.getText());
+		psy = Integer.parseInt(sy.getText());
 		
-		int pfx = Integer.parseInt(fx.getText());
-		int pfy = Integer.parseInt(fy.getText());
+		pfx = Integer.parseInt(fx.getText());
+		pfy = Integer.parseInt(fy.getText());
 		
 		if(psx>=cells || psy>=cells || pfx>=cells || pfy>=cells) throw new Exception("ERROR: Por lo menos uno de los valores ingresados excede la capacidad maxima");
 		if(psx<0 || psy<0 || pfx<0 || pfy<0) throw new Exception("ERROR: Por lo menos uno de los valores ingresados es menor a la posicion minima (0)");
-		if(psx==psy && pfx==pfy) throw new Exception("ERROR: Los puntos no pueden tener las mismas coordenadas");
+		if(psx==pfx && psy==pfy) throw new Exception("ERROR: Los puntos no pueden tener las mismas coordenadas");
 
 		
 		map[psx][psx].setCellType(1);
@@ -109,7 +114,6 @@ public class GUI {
 	public void initialize() throws Exception {
 
 		enterPositions();
-
 		frame = new JFrame();
 		frame.setVisible(true);
 		frame.setResizable(false);
@@ -118,6 +122,10 @@ public class GUI {
 		frame.getContentPane().setLayout(null);
 		frame.getContentPane().add(panel);
 		
+		makeGrid();
+	}
+	
+	public void makeGrid() {
 		canvas = new Map();
 		canvas.setBounds(0,0, MSIZE+1, MSIZE+1);
 		frame.getContentPane().add(canvas);
@@ -188,7 +196,16 @@ public class GUI {
 		@Override
 		public void mouseDragged(MouseEvent arg0) {
 			// TODO Auto-generated method stub
+			int x = arg0.getX()/CSIZE;
+			int y = arg0.getY()/CSIZE;
+
+			if(!((x==psx && y==psy) || (x==pfx && y==pfy))) {
+				if(map[x][y].getCellType()==3) {
+					map[x][y].setCellType(4);	
+				}
+			}
 			
+			frame.repaint();
 		}
 
 		@Override
@@ -200,7 +217,17 @@ public class GUI {
 		@Override
 		public void mouseClicked(MouseEvent arg0) {
 			// TODO Auto-generated method stub
-			
+			int x = arg0.getX()/CSIZE;
+			int y = arg0.getY()/CSIZE;
+			if(!((x==psx && y==psy) || (x==pfx && y==pfy))) {
+				if(map[x][y].getCellType()==3) {
+					map[x][y].setCellType(4);
+				}
+				else if(map[x][y].getCellType()==4) {
+					map[x][y].setCellType(3);
+				}
+			}
+			frame.repaint();
 		}
 
 		@Override
