@@ -8,6 +8,8 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Shape;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -15,14 +17,17 @@ import java.awt.image.ImageObserver;
 import java.text.AttributedCharacterIterator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 
@@ -40,7 +45,7 @@ public class GUI {
 	String[] pinceles = {"Nodo inicial","Nodo final","Borrador","Muro"};
 	
 	//Constantes
-	private int WIDTH = 605;
+	private int WIDTH = 700;
 	private int HEIGHT = 630;
 	int MSIZE = 600;
 	int CSIZE = MSIZE/cells;
@@ -120,8 +125,13 @@ public class GUI {
 		frame.setSize(WIDTH, HEIGHT);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
-		frame.getContentPane().add(panel);
 		
+		JButton c = new JButton("Holaaaa");
+		c.setBounds(WIDTH-80, 0, 10, 10);
+		panel.add(c);
+		
+		
+		frame.getContentPane().add(panel);
 		makeGrid();
 	}
 	
@@ -131,12 +141,12 @@ public class GUI {
 		frame.getContentPane().add(canvas);
 	}
 	
-	
 	class Node{
-		//1-Start cell, 2-Finish cell, 3-Empty cell, 4-Wall cell
+		//1-Start cell, 2-Finish cell, 3-Empty cell, 4-Wall cell, 5-Visited cell
 		private int cellType;
 		private int x;
 		private int y;
+		private boolean visited=false;
 		
 		public Node(int cellType, int x, int y) {
 			super();
@@ -144,6 +154,15 @@ public class GUI {
 			this.x = x;
 			this.y = y;
 		}
+		
+		public boolean isVisited() {
+			return visited;
+		}
+
+		public void setVisited(boolean visited) {
+			this.visited = visited;
+		}
+
 		public int getCellType() {
 			return cellType;
 		}
@@ -172,9 +191,9 @@ public class GUI {
 			addMouseListener(this);
 			addMouseMotionListener(this);
 		}
-		public void paintComponent(Graphics g) {	//REPAINT
+		public void paintComponent(Graphics g) {	
 			super.paintComponent(g);
-			for(int x = 0; x < cells; x++) {	//PAINT EACH NODE IN THE GRID
+			for(int x = 0; x < cells; x++) {
 				for(int y = 0; y < cells; y++) {
 					switch (map[x][y].getCellType()) {
 					case 1:
@@ -185,6 +204,8 @@ public class GUI {
 						g.setColor(Color.WHITE);break;
 					case 4:
 						g.setColor(Color.BLACK);break;
+					case 5:
+						g.setColor(Color.CYAN);break;
 					}
 					g.fillRect(x*CSIZE,y*CSIZE,CSIZE,CSIZE);
 					g.setColor(Color.BLACK);
@@ -193,19 +214,24 @@ public class GUI {
 			}
 		}
 		
-		@Override
-		public void mouseDragged(MouseEvent arg0) {
-			// TODO Auto-generated method stub
+		public void paintWalls(MouseEvent arg0) {
 			int x = arg0.getX()/CSIZE;
 			int y = arg0.getY()/CSIZE;
-
 			if(!((x==psx && y==psy) || (x==pfx && y==pfy))) {
 				if(map[x][y].getCellType()==3) {
 					map[x][y].setCellType(4);	
 				}
+//				else if(map[x][y].getCellType()==4) {
+//					map[x][y].setCellType(3);	
+//				}
 			}
-			
-			frame.repaint();
+			SwingUtilities.invokeLater(()->canvas.repaint());
+		}
+		
+		@Override
+		public void mouseDragged(MouseEvent arg0) {
+			// TODO Auto-generated method stub
+			new Thread(()->paintWalls(arg0)).start();
 		}
 
 		@Override
@@ -217,17 +243,19 @@ public class GUI {
 		@Override
 		public void mouseClicked(MouseEvent arg0) {
 			// TODO Auto-generated method stub
-			int x = arg0.getX()/CSIZE;
-			int y = arg0.getY()/CSIZE;
-			if(!((x==psx && y==psy) || (x==pfx && y==pfy))) {
-				if(map[x][y].getCellType()==3) {
-					map[x][y].setCellType(4);
-				}
-				else if(map[x][y].getCellType()==4) {
-					map[x][y].setCellType(3);
-				}
-			}
-			frame.repaint();
+//			int x = arg0.getX()/CSIZE;
+//			int y = arg0.getY()/CSIZE;
+//			if(!((x==psx && y==psy) || (x==pfx && y==pfy))) {
+//				if(map[x][y].getCellType()==3) {
+//					map[x][y].setCellType(4);
+//				}
+//				else if(map[x][y].getCellType()==4) {
+//					map[x][y].setCellType(3);
+//				}
+//			}
+//			frame.repaint();
+			Algorithms a = new Algorithms();
+		    new Thread(()->a.DFS(psx,psy)).start();
 		}
 
 		@Override
@@ -253,6 +281,62 @@ public class GUI {
 			// TODO Auto-generated method stub
 			
 		}
+		
+	}
+		
+	class Algorithms{
+
+		public Algorithms() {};
+		
+		public void DFS(int row, int col) {
+			if(map[row][col].isVisited()) return;
+			
+			map[row][col].setVisited(true);
+			
+			if(map[row][col].getCellType()==3) {
+				map[row][col].setCellType(5);
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				SwingUtilities.invokeLater(()->canvas.repaint());
+			}
+			
+			for(int i = col ; i < cells; i++) {
+				for(int j = row; j< cells ; j++) {
+					DFS(j,i);
+				}
+			}
+		}
+		
+		public void BFS(int row, int col) {
+						
+			List<GUI.Node> neighbours = new ArrayList<GUI.Node>();
+			
+			if(row-1>=0) {
+				neighbours.add(map[row-1][col]);
+			}
+			if(col-1>=0) {
+				neighbours.add(map[row][col-1]);
+			}
+			if(row+1<cells) {
+				neighbours.add(map[row+1][col]);
+			}
+			if(col+1<cells) {
+				neighbours.add(map[row][col+1]);
+			}
+			
+			for(GUI.Node n : neighbours) {
+				if(!n.isVisited() && n.getCellType()==3) {
+					n.setCellType(5);
+					canvas.repaint();
+					BFS(n.getX(),n.getY());
+				}
+			}
+			
+		}			
 		
 	}
 }
