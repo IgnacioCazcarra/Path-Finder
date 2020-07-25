@@ -112,7 +112,7 @@ public class GUI {
 		if(psx==pfx && psy==pfy) throw new Exception("ERROR: Los puntos no pueden tener las mismas coordenadas");
 
 		
-		map[psx][psx].setCellType(1);
+		map[psx][psy].setCellType(1);
 		map[pfx][pfy].setCellType(2);
 	}
 	
@@ -242,7 +242,6 @@ public class GUI {
 
 		@Override
 		public void mouseClicked(MouseEvent arg0) {
-			// TODO Auto-generated method stub
 //			int x = arg0.getX()/CSIZE;
 //			int y = arg0.getY()/CSIZE;
 //			if(!((x==psx && y==psy) || (x==pfx && y==pfy))) {
@@ -253,7 +252,6 @@ public class GUI {
 //					map[x][y].setCellType(3);
 //				}
 //			}
-//			frame.repaint();
 			Algorithms a = new Algorithms();
 		    new Thread(()->a.DFS(psx,psy)).start();
 		}
@@ -288,33 +286,55 @@ public class GUI {
 
 		public Algorithms() {};
 		
-		public void DFS(int row, int col) {
-			if(map[row][col].isVisited()) return;
+//		public void DFS(int row, int col) {
+//			if(map[row][col].isVisited()) return;
+//			
+//			map[row][col].setVisited(true);
+//			
+//			if(map[row][col].getCellType()==3) {
+//				map[row][col].setCellType(5);
+//				try {
+//					Thread.sleep(10);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//				SwingUtilities.invokeLater(()->canvas.repaint());
+//			}
+//			
+//			for(int i = col ; i < cells; i++) {
+//				for(int j = row; j< cells ; j++) {
+//					DFS(j,i);
+//				}
+//			}
+//		}
+		
+		public boolean DFS(int row, int col) {
 			
-			map[row][col].setVisited(true);
+			ArrayList<GUI.Node> neighbours = getNeighbours(row, col);
 			
-			if(map[row][col].getCellType()==3) {
-				map[row][col].setCellType(5);
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			for(GUI.Node n : neighbours) {
+				if(n.getCellType()==2) return true;
+				if(!n.isVisited() && n.getCellType()==3) {
+					n.setCellType(5);
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					SwingUtilities.invokeLater(()->canvas.repaint());
+					if(DFS(n.getX(),n.getY())) {
+						return true;
+					};
 				}
-				SwingUtilities.invokeLater(()->canvas.repaint());
 			}
-			
-			for(int i = col ; i < cells; i++) {
-				for(int j = row; j< cells ; j++) {
-					DFS(j,i);
-				}
-			}
+			return false;
 		}
 		
-		public void BFS(int row, int col) {
-						
-			List<GUI.Node> neighbours = new ArrayList<GUI.Node>();
-			
+		public ArrayList<GUI.Node> getNeighbours(int row, int col){
+			ArrayList<GUI.Node> neighbours = new ArrayList<GUI.Node>();
+
 			if(row-1>=0) {
 				neighbours.add(map[row-1][col]);
 			}
@@ -328,15 +348,8 @@ public class GUI {
 				neighbours.add(map[row][col+1]);
 			}
 			
-			for(GUI.Node n : neighbours) {
-				if(!n.isVisited() && n.getCellType()==3) {
-					n.setCellType(5);
-					canvas.repaint();
-					BFS(n.getX(),n.getY());
-				}
-			}
-			
-		}			
+			return neighbours;
+		}
 		
 	}
 }
