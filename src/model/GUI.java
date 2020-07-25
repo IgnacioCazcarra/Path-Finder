@@ -142,7 +142,7 @@ public class GUI {
 	}
 	
 	class Node{
-		//1-Start cell, 2-Finish cell, 3-Empty cell, 4-Wall cell, 5-Visited cell
+		//1-Start cell, 2-Finish cell, 3-Empty cell, 4-Wall cell, 5-Visited cell, 6-Path Cell
 		private int cellType;
 		private int x;
 		private int y;
@@ -206,6 +206,8 @@ public class GUI {
 						g.setColor(Color.BLACK);break;
 					case 5:
 						g.setColor(Color.CYAN);break;
+					case 6:
+						g.setColor(Color.YELLOW);break;
 					}
 					g.fillRect(x*CSIZE,y*CSIZE,CSIZE,CSIZE);
 					g.setColor(Color.BLACK);
@@ -253,7 +255,7 @@ public class GUI {
 //				}
 //			}
 			Algorithms a = new Algorithms();
-		    new Thread(()->a.DFS(psx,psy)).start();
+		    new Thread(()->a.BFS(psx,psy)).start();
 		}
 
 		@Override
@@ -285,36 +287,23 @@ public class GUI {
 	class Algorithms{
 
 		public Algorithms() {};
-		
-//		public void DFS(int row, int col) {
-//			if(map[row][col].isVisited()) return;
-//			
-//			map[row][col].setVisited(true);
-//			
-//			if(map[row][col].getCellType()==3) {
-//				map[row][col].setCellType(5);
-//				try {
-//					Thread.sleep(10);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//				SwingUtilities.invokeLater(()->canvas.repaint());
-//			}
-//			
-//			for(int i = col ; i < cells; i++) {
-//				for(int j = row; j< cells ; j++) {
-//					DFS(j,i);
-//				}
-//			}
-//		}
-		
+				
 		public boolean DFS(int row, int col) {
 			
 			ArrayList<GUI.Node> neighbours = getNeighbours(row, col);
 			
 			for(GUI.Node n : neighbours) {
-				if(n.getCellType()==2) return true;
+				if(n.getCellType()==2) {
+					map[row][col].setCellType(6);
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					SwingUtilities.invokeLater(()->canvas.repaint());
+					return true;
+				}
 				if(!n.isVisited() && n.getCellType()==3) {
 					n.setCellType(5);
 					try {
@@ -325,11 +314,33 @@ public class GUI {
 					}
 					SwingUtilities.invokeLater(()->canvas.repaint());
 					if(DFS(n.getX(),n.getY())) {
+						
+						if(map[row][col].getCellType()==5) map[row][col].setCellType(6);
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						SwingUtilities.invokeLater(()->canvas.repaint());
 						return true;
 					};
 				}
 			}
 			return false;
+		}
+		
+		public void BFS(int row, int col) {
+//			ArrayList<GUI.Node> neighbours = getNeighbours(row, col);
+//			
+//			for(GUI.Node n : neighbours) {
+//				for(GUI.Node n2 : getNeighbours(n.getX(), n.getY())) {
+//					if()
+//					SwingUtilities.invokeLater(()->canvas.repaint());
+//					BFS(n2.getX(),n2.getY());
+//				}
+//			}
+//		
 		}
 		
 		public ArrayList<GUI.Node> getNeighbours(int row, int col){
