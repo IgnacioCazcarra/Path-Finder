@@ -8,10 +8,16 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
 
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -296,9 +302,9 @@ public class GUI {
 
 		public boolean DFS(int row, int col) {
 
-			ArrayList<GUI.Node> neighbours = getNeighbours(row, col);
+			Set<Node> neighbours = getNeighbours(row, col);
 
-			for (GUI.Node n : neighbours) {
+			for (Node n : neighbours) {
 				if (n.getCellType().equals(Cells.FINISH)) {
 					map[row][col].setCellType(Cells.PATH);
 					canvas.paintWithDelay(10);
@@ -321,29 +327,35 @@ public class GUI {
 
 		public void BFS(int row, int col) {
 			Queue<Node> q = new LinkedList<Node>();
-
+			
 			q.add(map[row][col]);
 			boolean found = false;
 
 			while (!found) {
+				Node current = q.remove();
 
-				Node current = q.poll();
 				q.addAll(getNeighbours(current.getX(), current.getY()));
+				System.out.println(q.size());
+				Set<Node> aux = new LinkedHashSet<Node>(q);
+				q.clear();
+				q.addAll(aux);
+				
 				if (!current.isVisited() && current.getCellType().equals(Cells.EMPTY)) {
 					current.setCellType(Cells.VISITED);
 					current.setVisited(true);
 					canvas.paintWithDelay(5);
 				} else if (current.getCellType().equals(Cells.FINISH)) {
 					found = true;
+					q.clear();
 				}
 			}
 		}
-
-		public ArrayList<GUI.Node> getNeighbours(int row, int col) {
-			ArrayList<GUI.Node> neighbours = new ArrayList<GUI.Node>();
+		
+		public Set<Node> getNeighbours(int row, int col) {
+			Set<Node> neighbours = new HashSet<Node>();
 
 			if (row - 1 >= 0 && (map[row - 1][col].getCellType().equals(Cells.EMPTY) || map[row - 1][col].getCellType().equals(Cells.FINISH))) {
-				neighbours.add(map[row - 1][col]);
+				neighbours.add(map[row - 1][col]);	
 			}
 			if (col - 1 >= 0 && (map[row][col - 1].getCellType().equals(Cells.EMPTY) || map[row][col - 1].getCellType().equals(Cells.FINISH))) {
 				neighbours.add(map[row][col - 1]);
@@ -354,7 +366,6 @@ public class GUI {
 			if (col + 1 < cells && (map[row][col + 1].getCellType().equals(Cells.EMPTY) || map[row][col + 1].getCellType().equals(Cells.FINISH))) {
 				neighbours.add(map[row][col + 1]);
 			}
-
 			return neighbours;
 		}
 
