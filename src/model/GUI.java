@@ -79,19 +79,19 @@ public class GUI {
 		valuePanel.add(new JLabel("Ingrese la posicion del nodo inicial"));
 		valuePanel.add(new JLabel(""));
 
-		valuePanel.add(new JLabel("X (entre 0 y " + cells + "): "));
+		valuePanel.add(new JLabel("X (entre 1 y " + (cells-1) + "): "));
 		JTextField sx = new JTextField("");
 		valuePanel.add(sx);
-		valuePanel.add(new JLabel("Y (entre 0 y " + cells + "): "));
+		valuePanel.add(new JLabel("Y (entre 1 y " + (cells-1) + "): "));
 		JTextField sy = new JTextField("");
 		valuePanel.add(sy);
 
 		valuePanel.add(new JLabel("Ingrese la posicion del nodo final"));
 		valuePanel.add(new JLabel(""));
-		valuePanel.add(new JLabel("X (entre 0 y " + cells + "): "));
+		valuePanel.add(new JLabel("X (entre 1 y " + (cells-1) + "): "));
 		JTextField fx = new JTextField("");
 		valuePanel.add(fx);
-		valuePanel.add(new JLabel("Y (entre 0 y " + cells + "): "));
+		valuePanel.add(new JLabel("Y (entre 1 y " + (cells-1) + "): "));
 		JTextField fy = new JTextField("");
 		valuePanel.add(fy);
 
@@ -143,7 +143,7 @@ public class GUI {
 		private int x;
 		private int y;
 		private boolean visited = false;
-
+		private Node prev;
 		public Node(Cells cellType, int x, int y) {
 			super();
 			this.cellType = cellType;
@@ -181,6 +181,14 @@ public class GUI {
 
 		public void setY(int y) {
 			this.y = y;
+		}
+
+		public Node getPrev() {
+			return prev;
+		}
+
+		public void setPrev(Node prev) {
+			this.prev = prev;
 		}
 
 		@Override
@@ -264,9 +272,15 @@ public class GUI {
 		}
 
 		@Override
-		public void mouseClicked(MouseEvent arg0) {
+		public void mouseClicked(MouseEvent arg0){
 			Algorithms a = new Algorithms();
-			new Thread(() -> a.BFS(psx, psy)).start();
+			
+			try {
+				new Thread(() -> a.DFS(psx, psy)).start();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		@Override
@@ -300,45 +314,42 @@ public class GUI {
 		public Algorithms() {
 		};
 
-		public boolean DFS(int row, int col) {
+		public List<Node> DFS(int row, int col) {
 
-			Set<Node> neighbours = getNeighbours(row, col);
-
+			List<Node> neighbours = getNeighbours(row, col);
 			for (Node n : neighbours) {
 				if (n.getCellType().equals(Cells.FINISH)) {
-					map[row][col].setCellType(Cells.PATH);
-					canvas.paintWithDelay(10);
-					return true;
+					return findShortestPath(map[row][col]);
 				}
 				if (!n.isVisited() && n.getCellType().equals(Cells.EMPTY)) {
 					n.setCellType(Cells.VISITED);
+					n.setPrev(map[row][col]);
 					canvas.paintWithDelay(10);
-					if (DFS(n.getX(), n.getY())) {
-						if (map[row][col].getCellType().equals(Cells.VISITED)) {
-							map[row][col].setCellType(Cells.PATH);
-						}
-						canvas.paintWithDelay(10);
-						return true;
+					List<Node> spath = null;
+					spath = DFS(n.getX(), n.getY());
+					if(!spath.isEmpty()) {
+						paintPath(spath);
+						break;
 					}
 				}
 			}
-			return false;
+			
+			return null;
 		}
 
 		public void BFS(int row, int col) {
 			Queue<Node> q = new LinkedList<Node>();
-			
+
 			q.add(map[row][col]);
 			boolean found = false;
 
 			while (!found) {
 				Node current = q.remove();
 
-				q.addAll(getNeighbours(current.getX(), current.getY()));
-				System.out.println(q.size());
-				Set<Node> aux = new LinkedHashSet<Node>(q);
-				q.clear();
-				q.addAll(aux);
+				List<Node> s = getNeighbours(current.getX(), current.getY());
+				q.addAll(s);
+				q = removeDuplicates(q);
+				setPrev(s,current);
 				
 				if (!current.isVisited() && current.getCellType().equals(Cells.EMPTY)) {
 					current.setCellType(Cells.VISITED);
@@ -346,13 +357,45 @@ public class GUI {
 					canvas.paintWithDelay(5);
 				} else if (current.getCellType().equals(Cells.FINISH)) {
 					found = true;
+					paintPath(findShortestPath(current));
 					q.clear();
 				}
 			}
 		}
 		
-		public Set<Node> getNeighbours(int row, int col) {
-			Set<Node> neighbours = new HashSet<Node>();
+		
+		public void paintPath(List<Node> path) {
+			Collections.reverse(path);
+			for(Node n : path) {
+				if(n.getCellType().equals(Cells.VISITED)) n.setCellType(Cells.PATH);
+				canvas.paintWithDelay(15);
+			}
+		}
+		
+		public List<Node> findShortestPath(Node current) {
+			List<Node> lista = new ArrayList<Node>();
+			while(!current.getCellType().equals(Cells.START)) {
+				current = current.prev;
+				lista.add(current);
+			}
+			return lista;
+		}
+		
+		public Queue<Node> removeDuplicates(Queue<Node> q){
+			Set<Node> aux = new LinkedHashSet<Node>(q);
+			q.clear();
+			q.addAll(aux);
+			return q;
+		}
+		
+		public void setPrev(List<Node> s, Node current) {
+			for(Node n : s) {
+				n.setPrev(current);
+			}
+		}
+		
+		public List<Node> getNeighbours(int row, int col) {
+			List<Node> neighbours = new ArrayList<Node>();
 
 			if (row - 1 >= 0 && (map[row - 1][col].getCellType().equals(Cells.EMPTY) || map[row - 1][col].getCellType().equals(Cells.FINISH))) {
 				neighbours.add(map[row - 1][col]);	
