@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
@@ -143,6 +144,8 @@ public class GUI {
 		private int y;
 		private boolean visited = false;
 		private Node prev;
+		private int g;
+		private int h;
 
 		public Node(Cells cellType, int x, int y) {
 			super();
@@ -189,6 +192,22 @@ public class GUI {
 
 		public void setPrev(Node prev) {
 			this.prev = prev;
+		}
+
+		public int getG() {
+			return g;
+		}
+
+		public void setG(int g) {
+			this.g = g;
+		}
+
+		public int getH() {
+			return h;
+		}
+
+		public void setH(int h) {
+			this.h = h;
 		}
 
 		@Override
@@ -329,7 +348,7 @@ public class GUI {
 			Algorithms a = new Algorithms();
 
 			try {
-				new Thread(() -> a.DFS(startx, starty)).start();
+				new Thread(() -> a.Dijkstra(startx, starty)).start();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -415,12 +434,142 @@ public class GUI {
 			}
 		}
 
+//		public void AStar(int row, int col) {
+//			Set<Node> open = new LinkedHashSet<Node>();
+//			List<Node> closed = new ArrayList<Node>();
+//			initializeAStar();
+//			Node current = map[row][col];
+//			current.setG(current.g());
+//			current.setH(current.h());
+//			
+//			open.add(current);
+//			
+//			while(!map[finalx][finaly].isVisited() && open.size()>0) {
+//				
+//				Node min = minF(open);
+//				if(min.getCellType().equals(Cells.EMPTY)){
+//					min.setVisited(true);
+//					min.setCellType(Cells.VISITED);
+//					canvas.paintWithDelay(10);
+//				}
+//				
+//				if(min.getCellType().equals(Cells.FINISH)) {
+//					min.setVisited(true);
+//				}
+//				else {
+//					closed.add(min);
+//					List<Node> currentNeighbours = min.getNeighbours();
+//					min.setNeighboursPrev();
+//					for(Node n : currentNeighbours) {
+//						n.setG(n.g());
+//						if(n.getG()<min.getG() && closed.contains(n)) {
+//							n.setH(n.h());
+//						}
+//						else if() {
+//							
+//						}
+//						open.add(n);						
+//					}
+//				}
+//			}
+//		}
+		
+		public void Dijkstra(int row, int col) {
+			List<Node> l = new ArrayList<Node>();
+			initializeDistances();
+			map[row][col].setG(0);
+			l.add(map[row][col]);
+			Node current = l.get(0);
+			
+			while(!l.isEmpty() && !map[finalx][finaly].isVisited()) {
+				
+				for(Node n : current.getNeighbours()) {
+					
+					if(n.getCellType().equals(Cells.EMPTY) && !l.contains(n)) {
+						n.setPrev(current);
+						n.setG(n.g());
+						l.add(n);
+						n.setCellType(Cells.VISITED);
+						canvas.paintWithDelay(5);
+					}
+					else if(n.getCellType().equals(Cells.EMPTY) && l.contains(n)) {
+						
+						Node auxCurrent = n.getPrev();
+						int auxG = n.getG();
+						n.setPrev(current);
+						n.setG(n.g());
+						
+						if(n.getG()>auxG) {
+							n.setPrev(auxCurrent);
+							n.setG(auxG);
+						}
+						else {
+							l.remove(n);
+							l.add(n);
+						}
+					}
+					else if(n.getCellType().equals(Cells.FINISH)) {
+						n.setVisited(true);
+						n.setPrev(current);
+						paintPath(n.findShortestPath());
+						break;
+					}
+					
+				}
+				l.remove(current);
+				current = nextPromisingNode(l);
+			}
+			
+		}
+		
+		public Node nextPromisingNode(List<Node> lista) {
+			Node nextp = null;
+			
+			for(int i = 0 ; i < lista.size(); i++) {
+				if(i==0) {
+					nextp = lista.get(i);
+				}
+				
+				if(nextp.getG()>lista.get(i).getG()) {
+					nextp = lista.get(i);
+				}
+			}
+			
+			return nextp;
+		}
+		
 		public void paintPath(List<Node> path) {
 			Collections.reverse(path);
 			for (Node n : path) {
-				if (n.getCellType().equals(Cells.VISITED))
-					n.setCellType(Cells.PATH);
+				if (n.getCellType().equals(Cells.VISITED)) {
+					n.setCellType(Cells.PATH);	
+				}
 				canvas.paintWithDelay(15);
+			}
+		}
+		
+		public Node minF(Set<Node> open) {
+			int i = 0; 
+			Node min = null;
+			for(Node n : open) {
+				if(i==0) {
+					min = n;
+				}
+				
+				if(min.f() >= n.f()) {
+					min = n;
+				}
+				i++;
+			}
+			return min;
+		}
+		
+		public void initializeDistances() {
+			for(int i = 0 ; i < cells ; i++) {
+				for(int j = 0 ; j < cells ; j++) {
+					map[i][j].setG(Integer.MAX_VALUE);
+					map[i][j].setH(Integer.MAX_VALUE);
+				}
 			}
 		}
 
