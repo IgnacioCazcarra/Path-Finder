@@ -32,14 +32,14 @@ public class GUI {
 	int cells = 30;
 	int startx = -1;
 	int starty = -1;
-	int finalx = -1;
-	int finaly = -1;
+	int targetx = -1;
+	int targety = -1;
 	// Botones
 	String[] pinceles = { "Nodo inicial", "Nodo final", "Borrador", "Muro" };
 
 	// Enum
 	enum Cells {
-		START, FINISH, EMPTY, WALL, VISITED, PATH
+		START, TARGET, EMPTY, WALL, VISITED, PATH
 	}
 
 	// Constantes
@@ -78,19 +78,19 @@ public class GUI {
 		valuePanel.add(new JLabel("Ingrese la posicion del nodo inicial"));
 		valuePanel.add(new JLabel(""));
 
-		valuePanel.add(new JLabel("X (entre 1 y " + (cells - 1) + "): "));
+		valuePanel.add(new JLabel("X (entre 0 y " + (cells - 1) + "): "));
 		JTextField sx = new JTextField("");
 		valuePanel.add(sx);
-		valuePanel.add(new JLabel("Y (entre 1 y " + (cells - 1) + "): "));
+		valuePanel.add(new JLabel("Y (entre 0 y " + (cells - 1) + "): "));
 		JTextField sy = new JTextField("");
 		valuePanel.add(sy);
 
 		valuePanel.add(new JLabel("Ingrese la posicion del nodo final"));
 		valuePanel.add(new JLabel(""));
-		valuePanel.add(new JLabel("X (entre 1 y " + (cells - 1) + "): "));
+		valuePanel.add(new JLabel("X (entre 0 y " + (cells - 1) + "): "));
 		JTextField fx = new JTextField("");
 		valuePanel.add(fx);
-		valuePanel.add(new JLabel("Y (entre 1 y " + (cells - 1) + "): "));
+		valuePanel.add(new JLabel("Y (entre 0 y " + (cells - 1) + "): "));
 		JTextField fy = new JTextField("");
 		valuePanel.add(fy);
 
@@ -103,18 +103,18 @@ public class GUI {
 		startx = Integer.parseInt(sx.getText());
 		starty = Integer.parseInt(sy.getText());
 
-		finalx = Integer.parseInt(fx.getText());
-		finaly = Integer.parseInt(fy.getText());
+		targetx = Integer.parseInt(fx.getText());
+		targety = Integer.parseInt(fy.getText());
 
-		if (startx >= cells || starty >= cells || finalx >= cells || finaly >= cells)
+		if (startx >= cells || starty >= cells || targetx >= cells || targety >= cells)
 			throw new Exception("ERROR: Por lo menos uno de los valores ingresados excede la capacidad maxima");
-		if (startx < 0 || starty < 0 || finalx < 0 || finaly < 0)
+		if (startx < 0 || starty < 0 || targetx < 0 || targety < 0)
 			throw new Exception("ERROR: Por lo menos uno de los valores ingresados es menor a la posicion minima (0)");
-		if (startx == finalx && starty == finaly)
+		if (startx == targetx && starty == targety)
 			throw new Exception("ERROR: Los puntos no pueden tener las mismas coordenadas");
 
 		map[startx][starty].setCellType(Cells.START);
-		map[finalx][finaly].setCellType(Cells.FINISH);
+		map[targetx][targety].setCellType(Cells.TARGET);
 	}
 
 	public void initialize() throws Exception {
@@ -223,42 +223,42 @@ public class GUI {
 		}
 
 		public int g() {
-			return findShortestPath().size()-1;
+			return findShortestPath().size() - 1;
 		}
 
 		public int h() {
-			return Math.abs((this.getX() - finalx)) + Math.abs((this.getY() - finaly));
+			return Math.abs((this.getX() - targetx)) + Math.abs((this.getY() - targety));
 		}
-		
+
 		public List<Node> getNeighbours() {
-		
+
 			List<Node> neighbours = new ArrayList<Node>();
-			int row = this.getX(); 
+			int row = this.getX();
 			int col = this.getY();
-			
+
 			if (row - 1 >= 0 && (map[row - 1][col].getCellType().equals(Cells.EMPTY)
-					|| map[row - 1][col].getCellType().equals(Cells.FINISH))) {
+					|| map[row - 1][col].getCellType().equals(Cells.TARGET))) {
 				neighbours.add(map[row - 1][col]);
 			}
 			if (col - 1 >= 0 && (map[row][col - 1].getCellType().equals(Cells.EMPTY)
-					|| map[row][col - 1].getCellType().equals(Cells.FINISH))) {
+					|| map[row][col - 1].getCellType().equals(Cells.TARGET))) {
 				neighbours.add(map[row][col - 1]);
 			}
 			if (row + 1 < cells && (map[row + 1][col].getCellType().equals(Cells.EMPTY)
-					|| map[row + 1][col].getCellType().equals(Cells.FINISH))) {
+					|| map[row + 1][col].getCellType().equals(Cells.TARGET))) {
 				neighbours.add(map[row + 1][col]);
 			}
 			if (col + 1 < cells && (map[row][col + 1].getCellType().equals(Cells.EMPTY)
-					|| map[row][col + 1].getCellType().equals(Cells.FINISH))) {
+					|| map[row][col + 1].getCellType().equals(Cells.TARGET))) {
 				neighbours.add(map[row][col + 1]);
 			}
 			return neighbours;
 		}
-		
+
 		public List<Node> findShortestPath() {
 			List<Node> lista = new ArrayList<Node>();
 			Node current = this;
-			
+
 			lista.add(current);
 			while (!current.getCellType().equals(Cells.START)) {
 				current = current.prev;
@@ -269,10 +269,11 @@ public class GUI {
 
 		public void setNeighboursPrev() {
 			for (Node n : getNeighbours()) {
-				n.setPrev(this);
+				if (n.getPrev() == null)
+					n.setPrev(this);
 			}
 		}
-		
+
 	}
 
 	class Map extends JPanel implements MouseListener, MouseMotionListener {
@@ -290,7 +291,7 @@ public class GUI {
 					case START:
 						g.setColor(Color.MAGENTA);
 						break;
-					case FINISH:
+					case TARGET:
 						g.setColor(Color.RED);
 						break;
 					case EMPTY:
@@ -316,7 +317,7 @@ public class GUI {
 		public void paintWalls(MouseEvent arg0) {
 			int x = arg0.getX() / CSIZE;
 			int y = arg0.getY() / CSIZE;
-			if (!((x == startx && y == starty) || (x == finalx && y == finaly))) {
+			if (!((x == startx && y == starty) || (x == targetx && y == targety))) {
 				if (map[x][y].getCellType().equals(Cells.EMPTY)) {
 					map[x][y].setCellType(Cells.WALL);
 				}
@@ -348,7 +349,7 @@ public class GUI {
 			Algorithms a = new Algorithms();
 
 			try {
-				new Thread(() -> a.Dijkstra(startx, starty)).start();
+				new Thread(() -> a.AStar(startx, starty)).start();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -378,14 +379,15 @@ public class GUI {
 
 	class Algorithms {
 
-		public Algorithms() {}
+		public Algorithms() {
+		}
 
 		public List<Node> DFS(int row, int col) {
 			List<Node> neighbours = map[row][col].getNeighbours();
 
 			for (Node n : neighbours) {
-				if (!map[finalx][finaly].isVisited()) {
-					if (n.getCellType().equals(Cells.FINISH)) {
+				if (!map[targetx][targety].isVisited()) {
+					if (n.getCellType().equals(Cells.TARGET)) {
 						n.setVisited(true);
 						return map[row][col].findShortestPath();
 					}
@@ -417,16 +419,16 @@ public class GUI {
 
 				List<Node> s = current.getNeighbours();
 				q.addAll(s);
-				
+
 				q = removeDuplicates(q);
-				
+
 				current.setNeighboursPrev();
-				
+
 				if (!current.isVisited() && current.getCellType().equals(Cells.EMPTY)) {
 					current.setCellType(Cells.VISITED);
 					current.setVisited(true);
 					canvas.paintWithDelay(5);
-				} else if (current.getCellType().equals(Cells.FINISH)) {
+				} else if (current.getCellType().equals(Cells.TARGET)) {
 					found = true;
 					paintPath(current.findShortestPath());
 					q.clear();
@@ -434,139 +436,151 @@ public class GUI {
 			}
 		}
 
-//		public void AStar(int row, int col) {
-//			Set<Node> open = new LinkedHashSet<Node>();
-//			List<Node> closed = new ArrayList<Node>();
-//			initializeAStar();
-//			Node current = map[row][col];
-//			current.setG(current.g());
-//			current.setH(current.h());
-//			
-//			open.add(current);
-//			
-//			while(!map[finalx][finaly].isVisited() && open.size()>0) {
-//				
-//				Node min = minF(open);
-//				if(min.getCellType().equals(Cells.EMPTY)){
-//					min.setVisited(true);
-//					min.setCellType(Cells.VISITED);
-//					canvas.paintWithDelay(10);
-//				}
-//				
-//				if(min.getCellType().equals(Cells.FINISH)) {
-//					min.setVisited(true);
-//				}
-//				else {
-//					closed.add(min);
-//					List<Node> currentNeighbours = min.getNeighbours();
-//					min.setNeighboursPrev();
-//					for(Node n : currentNeighbours) {
-//						n.setG(n.g());
-//						if(n.getG()<min.getG() && closed.contains(n)) {
-//							n.setH(n.h());
-//						}
-//						else if() {
-//							
-//						}
-//						open.add(n);						
-//					}
-//				}
-//			}
-//		}
-		
+		public void AStar(int row, int col) {
+			Set<Node> open = new LinkedHashSet<Node>();
+			List<Node> closed = new ArrayList<Node>();
+			initializeDistances();
+
+			map[row][col].setG(map[row][col].g());
+			map[row][col].setH(map[row][col].h());
+			open.add(map[row][col]);
+
+			while (!map[targetx][targety].isVisited() && open.size() > 0) {
+
+				Node min = minF(open);
+				closed.add(min);
+				open.remove(min);
+				
+				//All nodes in the open list are walkable so we only need to take care of not treating the start node as an empty one.
+				if(!min.getCellType().equals(Cells.START)) {
+					min.setVisited(true);
+					min.setCellType(Cells.VISITED);
+					canvas.paintWithDelay(10);
+				}
+
+				List<Node> currentNeighbours = min.getNeighbours();
+				//Set prev for only those who don't have a previous one
+				min.setNeighboursPrev();
+				
+				for (Node n : currentNeighbours) {
+					
+					if (n.getCellType().equals(Cells.TARGET)) {
+						n.setVisited(true);
+						paintPath(n.findShortestPath());
+						break;
+					} // Neighbours will always be walkable so we only check if its the target node
+					else if (!closed.contains(n)) {
+
+						if (!open.contains(n)) {
+							n.setG(n.g());
+							n.setH(n.h());
+							open.add(n);
+						} else {
+							//Check if a new shorter path is found for the node
+							Node auxPrev = n.getPrev();
+							int auxG = n.getG();
+							n.setPrev(min);
+							n.setG(n.g());
+							if (n.getG() >= auxG) {
+								n.setPrev(auxPrev);
+								n.setG(auxG);
+							}
+						}
+					}
+				}
+			}
+		}
+
 		public void Dijkstra(int row, int col) {
 			List<Node> l = new ArrayList<Node>();
 			initializeDistances();
 			map[row][col].setG(0);
 			l.add(map[row][col]);
 			Node current = l.get(0);
-			
-			while(!l.isEmpty() && !map[finalx][finaly].isVisited()) {
-				
-				for(Node n : current.getNeighbours()) {
-					
-					if(n.getCellType().equals(Cells.EMPTY) && !l.contains(n)) {
+
+			while (!l.isEmpty() && !map[targetx][targety].isVisited()) {
+
+				for (Node n : current.getNeighbours()) {
+
+					if (n.getCellType().equals(Cells.EMPTY) && !l.contains(n)) {
 						n.setPrev(current);
 						n.setG(n.g());
 						l.add(n);
 						n.setCellType(Cells.VISITED);
 						canvas.paintWithDelay(5);
-					}
-					else if(n.getCellType().equals(Cells.EMPTY) && l.contains(n)) {
-						
+					} else if (n.getCellType().equals(Cells.EMPTY) && l.contains(n)) {
+
 						Node auxCurrent = n.getPrev();
 						int auxG = n.getG();
 						n.setPrev(current);
 						n.setG(n.g());
-						
-						if(n.getG()>auxG) {
+
+						if (n.getG() > auxG) {
 							n.setPrev(auxCurrent);
 							n.setG(auxG);
-						}
-						else {
+						} else {
 							l.remove(n);
 							l.add(n);
 						}
-					}
-					else if(n.getCellType().equals(Cells.FINISH)) {
+					} else if (n.getCellType().equals(Cells.TARGET)) {
 						n.setVisited(true);
 						n.setPrev(current);
 						paintPath(n.findShortestPath());
 						break;
 					}
-					
+
 				}
 				l.remove(current);
 				current = nextPromisingNode(l);
 			}
-			
+
 		}
-		
+
 		public Node nextPromisingNode(List<Node> lista) {
 			Node nextp = null;
-			
-			for(int i = 0 ; i < lista.size(); i++) {
-				if(i==0) {
+
+			for (int i = 0; i < lista.size(); i++) {
+				if (i == 0) {
 					nextp = lista.get(i);
 				}
-				
-				if(nextp.getG()>lista.get(i).getG()) {
+
+				if (nextp.getG() > lista.get(i).getG()) {
 					nextp = lista.get(i);
 				}
 			}
-			
+
 			return nextp;
 		}
-		
+
 		public void paintPath(List<Node> path) {
 			Collections.reverse(path);
 			for (Node n : path) {
 				if (n.getCellType().equals(Cells.VISITED)) {
-					n.setCellType(Cells.PATH);	
+					n.setCellType(Cells.PATH);
 				}
 				canvas.paintWithDelay(15);
 			}
 		}
-		
+
 		public Node minF(Set<Node> open) {
-			int i = 0; 
+			int i = 0;
 			Node min = null;
-			for(Node n : open) {
-				if(i==0) {
+			for (Node n : open) {
+				if (i == 0) {
 					min = n;
 				}
-				
-				if(min.f() >= n.f()) {
+
+				if (min.f() >= n.f()) {
 					min = n;
 				}
 				i++;
 			}
 			return min;
 		}
-		
+
 		public void initializeDistances() {
-			for(int i = 0 ; i < cells ; i++) {
-				for(int j = 0 ; j < cells ; j++) {
+			for (int i = 0; i < cells; i++) {
+				for (int j = 0; j < cells; j++) {
 					map[i][j].setG(Integer.MAX_VALUE);
 					map[i][j].setH(Integer.MAX_VALUE);
 				}
