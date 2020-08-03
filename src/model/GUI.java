@@ -2,8 +2,8 @@ package model;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.GridLayout;
-
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -13,29 +13,44 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
+import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 public class GUI {
+
 	JFrame frame;
 	Node[][] map;
 	Map canvas;
 	JPanel panel = new JPanel();
+
 	int cells = 30;
-	int startx = -1;
-	int starty = -1;
-	int targetx = -1;
-	int targety = -1;
-	// Botones
-	String[] pinceles = { "Nodo inicial", "Nodo final", "Borrador", "Muro" };
+
+	int startx = 0;
+	int starty = 0;
+	int targetx = cells-1;
+	int targety = cells-1;
+	boolean solving = false;
+
+	JLabel toolsLabel = new JLabel("<html>Choose the type of node you want to draw</html>");
+	JLabel algorithmLabel = new JLabel("<html>Choose the algorithm you want to visualize</html>");
+	JLabel controlsLabel = new JLabel("<html>Controls</html>", SwingConstants.CENTER);
+	JLabel warning = new JLabel("<html>Wait after the path is drawn and press 'Clear' to continue</html>", SwingConstants.CENTER);
+	
+	String[] pinceles = { "Wall", "Eraser","Starting node", "Target node"};
+	String[] algoritmos = { "Dijkstra's algorithm", "A* algorithm","Depth-First Search", "Breadth-First Search"};
+	JComboBox tools = new JComboBox(pinceles);
+	JComboBox algo = new JComboBox(algoritmos);
+
+	JButton startSearch = new JButton("Start");
+	JButton clearMap = new JButton("Clear");
 
 	// Enum
 	enum Cells {
@@ -43,7 +58,7 @@ public class GUI {
 	}
 
 	// Constantes
-	private int WIDTH = 700;
+	private int WIDTH = 825;
 	private int HEIGHT = 630;
 	int MSIZE = 600;
 	int CSIZE = MSIZE / cells;
@@ -62,6 +77,14 @@ public class GUI {
 
 	}
 
+	public void resetVariables() {
+		 startx = 0;
+		 starty = 0;
+		 targetx = 29;
+		 targety = 29;
+		 solving=false;
+	}
+	
 	public void createEmptyMap() {
 		map = new Node[cells][cells];
 		for (int i = 0; i < cells; i++) {
@@ -69,57 +92,17 @@ public class GUI {
 				map[i][j] = new Node(Cells.EMPTY, i, j);
 			}
 		}
-
-	}
-
-	public void enterPositions() throws Exception {
-		JPanel valuePanel = new JPanel();
-		valuePanel.setLayout(new GridLayout(0, 2, 8, 8));
-		valuePanel.add(new JLabel("Ingrese la posicion del nodo inicial"));
-		valuePanel.add(new JLabel(""));
-
-		valuePanel.add(new JLabel("X (entre 0 y " + (cells - 1) + "): "));
-		JTextField sx = new JTextField("");
-		valuePanel.add(sx);
-		valuePanel.add(new JLabel("Y (entre 0 y " + (cells - 1) + "): "));
-		JTextField sy = new JTextField("");
-		valuePanel.add(sy);
-
-		valuePanel.add(new JLabel("Ingrese la posicion del nodo final"));
-		valuePanel.add(new JLabel(""));
-		valuePanel.add(new JLabel("X (entre 0 y " + (cells - 1) + "): "));
-		JTextField fx = new JTextField("");
-		valuePanel.add(fx);
-		valuePanel.add(new JLabel("Y (entre 0 y " + (cells - 1) + "): "));
-		JTextField fy = new JTextField("");
-		valuePanel.add(fy);
-
-		int result = JOptionPane.showConfirmDialog(null, valuePanel, " ", JOptionPane.OK_CANCEL_OPTION,
-				JOptionPane.PLAIN_MESSAGE);
-
-		if (result == JOptionPane.OK_CANCEL_OPTION)
-			throw new Exception("Operacion cancelada");
-
-		startx = Integer.parseInt(sx.getText());
-		starty = Integer.parseInt(sy.getText());
-
-		targetx = Integer.parseInt(fx.getText());
-		targety = Integer.parseInt(fy.getText());
-
-		if (startx >= cells || starty >= cells || targetx >= cells || targety >= cells)
-			throw new Exception("ERROR: Por lo menos uno de los valores ingresados excede la capacidad maxima");
-		if (startx < 0 || starty < 0 || targetx < 0 || targety < 0)
-			throw new Exception("ERROR: Por lo menos uno de los valores ingresados es menor a la posicion minima (0)");
-		if (startx == targetx && starty == targety)
-			throw new Exception("ERROR: Los puntos no pueden tener las mismas coordenadas");
-
+		resetVariables();
 		map[startx][starty].setCellType(Cells.START);
 		map[targetx][targety].setCellType(Cells.TARGET);
+
 	}
 
 	public void initialize() throws Exception {
 
-		enterPositions();
+		map[startx][starty].setCellType(Cells.START);
+		map[targetx][targety].setCellType(Cells.TARGET);
+
 		frame = new JFrame();
 		frame.setVisible(true);
 		frame.setResizable(false);
@@ -127,6 +110,92 @@ public class GUI {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 
+		int space = 25;
+		controlsLabel.setBounds(610, 10, 200, 25);
+		controlsLabel.setFont(controlsLabel.getFont().deriveFont(20.0f));
+
+		startSearch.setBounds(610, 40, 200, 25);
+		space += 30;
+		clearMap.setBounds(610, 25 + space, 200, 25);
+		space += 50;
+		algorithmLabel.setBounds(610, 25 + space, 200, 25);
+		space += 35;
+		algo.setBounds(610, 25 + space, 200, 25);
+		space += 50;
+		toolsLabel.setBounds(610, 25 + space, 200, 25);
+		space += 35;
+		tools.setBounds(610, 25 + space, 200, 25);
+		space +=50;
+		warning.setBounds(610, 30+space, 200, 30);
+		warning.setVisible(false);
+		warning.setForeground(Color.BLUE);
+		startSearch.addActionListener(new ActionListener() {
+		
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				Algorithms a = new Algorithms();
+				startSearch.setEnabled(false);
+				tools.setEnabled(false);
+				algo.setEnabled(false);
+				try {
+					switch (algo.getSelectedItem().toString()) {
+						case "Depth-First Search": {
+							solving = true;
+							new Thread(() -> a.DFS(startx, starty)).start();
+							break;
+						}
+						case "Breadth-First Search": {
+							solving = true;
+							new Thread(() -> a.BFS(startx, starty)).start();
+							break;
+						}
+						case "Dijkstra's algorithm": {
+							solving = true;
+							new Thread(() -> a.Dijkstra(startx, starty)).start();
+							break;
+						}
+						case "A* algorithm": {
+							solving = true;
+							new Thread(() -> a.AStar(startx, starty)).start();
+							break;
+						}
+					}
+					
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+				warning.setVisible(true);
+			}
+		});
+
+		clearMap.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				if (!solving) {
+					createEmptyMap();
+					canvas.repaint();
+					startSearch.setEnabled(true);
+					tools.setEnabled(true);
+					algo.setEnabled(true);
+					warning.setVisible(false);
+				}
+			}
+		});
+
+		frame.getContentPane().add(controlsLabel);
+		frame.getContentPane().add(toolsLabel);
+		frame.getContentPane().add(tools);
+		frame.getContentPane().add(startSearch);
+		frame.getContentPane().add(clearMap);
+		frame.getContentPane().add(algorithmLabel);
+		frame.getContentPane().add(algo);
+		frame.getContentPane().add(warning);
+
+		
+		
 		frame.getContentPane().add(panel);
 		makeGrid();
 	}
@@ -236,25 +305,30 @@ public class GUI {
 			int row = this.getX();
 			int col = this.getY();
 
-			if (row - 1 >= 0 && (map[row - 1][col].getCellType().equals(Cells.EMPTY)
-					|| map[row - 1][col].getCellType().equals(Cells.TARGET))) {
+			if (row - 1 >= 0 && validateType(row - 1, col)) {
 				neighbours.add(map[row - 1][col]);
 			}
-			if (col - 1 >= 0 && (map[row][col - 1].getCellType().equals(Cells.EMPTY)
-					|| map[row][col - 1].getCellType().equals(Cells.TARGET))) {
+			if (col - 1 >= 0 && validateType(row, col - 1)) {
 				neighbours.add(map[row][col - 1]);
 			}
-			if (row + 1 < cells && (map[row + 1][col].getCellType().equals(Cells.EMPTY)
-					|| map[row + 1][col].getCellType().equals(Cells.TARGET))) {
+			if (row + 1 < cells && validateType(row + 1, col)) {
 				neighbours.add(map[row + 1][col]);
 			}
-			if (col + 1 < cells && (map[row][col + 1].getCellType().equals(Cells.EMPTY)
-					|| map[row][col + 1].getCellType().equals(Cells.TARGET))) {
+			if (col + 1 < cells && validateType(row, col + 1)) {
 				neighbours.add(map[row][col + 1]);
 			}
 			return neighbours;
 		}
 
+		public boolean validateType(int row, int col) {
+			boolean qualified = false;
+			if(map[row][col].getCellType().equals(Cells.EMPTY) || map[row][col].getCellType().equals(Cells.TARGET)) {
+				qualified = true;
+			}
+			
+			return qualified;
+		}
+		
 		public List<Node> findShortestPath() {
 			List<Node> lista = new ArrayList<Node>();
 			Node current = this;
@@ -285,28 +359,30 @@ public class GUI {
 
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
+			Color color = null;
 			for (int x = 0; x < cells; x++) {
 				for (int y = 0; y < cells; y++) {
 					switch (map[x][y].getCellType()) {
 					case START:
-						g.setColor(Color.MAGENTA);
+						color = Color.MAGENTA;
 						break;
 					case TARGET:
-						g.setColor(Color.RED);
+						color = Color.RED;
 						break;
 					case EMPTY:
-						g.setColor(Color.WHITE);
+						color = Color.WHITE;
 						break;
 					case WALL:
-						g.setColor(Color.BLACK);
+						color = Color.BLACK;
 						break;
 					case VISITED:
-						g.setColor(Color.CYAN);
+						color = Color.CYAN;
 						break;
 					case PATH:
-						g.setColor(Color.YELLOW);
+						color = Color.YELLOW;
 						break;
 					}
+					g.setColor(color);
 					g.fillRect(x * CSIZE, y * CSIZE, CSIZE, CSIZE);
 					g.setColor(Color.BLACK);
 					g.drawRect(x * CSIZE, y * CSIZE, CSIZE, CSIZE);
@@ -314,17 +390,75 @@ public class GUI {
 			}
 		}
 
-		public void paintWalls(MouseEvent arg0) {
+		public void chooseTool(MouseEvent arg0) {
+
+			String option = tools.getSelectedItem().toString();
+
 			int x = arg0.getX() / CSIZE;
 			int y = arg0.getY() / CSIZE;
-			if (!((x == startx && y == starty) || (x == targetx && y == targety))) {
-				if (map[x][y].getCellType().equals(Cells.EMPTY)) {
-					map[x][y].setCellType(Cells.WALL);
+
+			switch (option) {
+			case "Starting node":
+				paintPrincipalNode(x, y, option);
+				break;
+			case "Target node":
+				paintPrincipalNode(x, y, option);
+				break;
+			case "Eraser":
+				paintOrErase(x, y, Cells.WALL, Cells.EMPTY);
+				break;
+			case "Wall":
+				paintOrErase(x, y, Cells.EMPTY, Cells.WALL);
+				break;
+			}
+			SwingUtilities.invokeLater(() -> canvas.repaint());
+
+		}
+		
+		public void paintOrErase(int x, int y, Cells checkIfNotThis, Cells setThisType) {
+			if (qualified(x) && qualified(y) && map[x][y].getCellType().equals(checkIfNotThis)) {
+				if (!((x == startx && y == starty) || (x == targetx && y == targety))) {
+					map[x][y].setCellType(setThisType);
 				}
 			}
+		}
+
+		public void paintPrincipalNode(int x, int y, String node) {
+			
+				if (qualified(x) && qualified(y)) {
+					
+					if(map[x][y].getCellType().equals(Cells.EMPTY)) {
+						
+						if(node.equalsIgnoreCase("Starting node")) {
+							map[startx][starty].setCellType(Cells.EMPTY);
+							startx = x;
+							starty = y;
+							map[startx][starty].setCellType(Cells.START);
+						}
+						else {
+							map[targetx][targety].setCellType(Cells.EMPTY);
+							targetx = x;
+							targety = y;	
+							map[targetx][targety].setCellType(Cells.TARGET);
+						}
+					}
+					
+				}
+			
 			SwingUtilities.invokeLater(() -> canvas.repaint());
 		}
 
+		public boolean qualified(int position) {
+			boolean ok = true;
+			if(position>=cells) {
+				ok = false;
+			}
+			if(position<0) {
+				ok = false;
+			}
+			return ok;
+		}
+		
 		public void paintWithDelay(int ms) {
 			try {
 				Thread.sleep(ms);
@@ -336,7 +470,7 @@ public class GUI {
 
 		@Override
 		public void mouseDragged(MouseEvent arg0) {
-			new Thread(() -> paintWalls(arg0)).start();
+			new Thread(() -> chooseTool(arg0)).start();
 		}
 
 		@Override
@@ -346,13 +480,7 @@ public class GUI {
 
 		@Override
 		public void mouseClicked(MouseEvent arg0) {
-			Algorithms a = new Algorithms();
-
-			try {
-				new Thread(() -> a.AStar(startx, starty)).start();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			new Thread(() -> chooseTool(arg0)).start();
 		}
 
 		@Override
@@ -386,12 +514,13 @@ public class GUI {
 			List<Node> neighbours = map[row][col].getNeighbours();
 
 			for (Node n : neighbours) {
+				// This if statement avoids keep visiting nodes after having found a path
 				if (!map[targetx][targety].isVisited()) {
+
 					if (n.getCellType().equals(Cells.TARGET)) {
 						n.setVisited(true);
 						return map[row][col].findShortestPath();
-					}
-					if (!n.isVisited() && n.getCellType().equals(Cells.EMPTY)) {
+					} else if (!n.isVisited() && n.getCellType().equals(Cells.EMPTY)) {
 						n.setPrev(map[row][col]);
 						n.setCellType(Cells.VISITED);
 						canvas.paintWithDelay(10);
@@ -400,6 +529,7 @@ public class GUI {
 						spath = DFS(n.getX(), n.getY());
 						if (spath != null && !spath.isEmpty()) {
 							paintPath(spath);
+							solving=false;
 							break;
 						}
 					}
@@ -432,6 +562,7 @@ public class GUI {
 					found = true;
 					paintPath(current.findShortestPath());
 					q.clear();
+					solving=false;
 				}
 			}
 		}
@@ -450,23 +581,25 @@ public class GUI {
 				Node min = minF(open);
 				closed.add(min);
 				open.remove(min);
-				
-				//All nodes in the open list are walkable so we only need to take care of not treating the start node as an empty one.
-				if(!min.getCellType().equals(Cells.START)) {
+
+				// All nodes in the open list are walkable so we only need to take care of not
+				// treating the start node as an empty one.
+				if (!min.getCellType().equals(Cells.START)) {
 					min.setVisited(true);
 					min.setCellType(Cells.VISITED);
 					canvas.paintWithDelay(10);
 				}
 
 				List<Node> currentNeighbours = min.getNeighbours();
-				//Set prev for only those who don't have a previous one
+				// Set prev for only those who don't have a previous one
 				min.setNeighboursPrev();
-				
+
 				for (Node n : currentNeighbours) {
-					
+
 					if (n.getCellType().equals(Cells.TARGET)) {
 						n.setVisited(true);
 						paintPath(n.findShortestPath());
+						solving=false;
 						break;
 					} // Neighbours will always be walkable so we only check if its the target node
 					else if (!closed.contains(n)) {
@@ -476,7 +609,7 @@ public class GUI {
 							n.setH(n.h());
 							open.add(n);
 						} else {
-							//Check if a new shorter path is found for the node
+							// Check if a new shorter path is found for the node
 							Node auxPrev = n.getPrev();
 							int auxG = n.getG();
 							n.setPrev(min);
@@ -526,6 +659,7 @@ public class GUI {
 						n.setVisited(true);
 						n.setPrev(current);
 						paintPath(n.findShortestPath());
+						solving=false;
 						break;
 					}
 
@@ -537,13 +671,12 @@ public class GUI {
 		}
 
 		public Node nextPromisingNode(List<Node> lista) {
-			Node nextp = null;
+			if (lista.isEmpty())
+				return null;
+
+			Node nextp = lista.get(0);
 
 			for (int i = 0; i < lista.size(); i++) {
-				if (i == 0) {
-					nextp = lista.get(i);
-				}
-
 				if (nextp.getG() > lista.get(i).getG()) {
 					nextp = lista.get(i);
 				}
